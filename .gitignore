@@ -1,0 +1,47 @@
+# Credentials - NEVER commit these
+config.env
+.env
+.env.*
+!.env.example
+
+# Database - contains sensitive trading data
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+stock_skill/data/
+.data/
+
+# ML Models - potential security risk from pickle/joblib
+models/
+*.joblib
+*.pkl
+*.pickle
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs - may contain sensitive information
+*.log
+*.tmp
+
+# API keys and tokens
+*token*
+*secret*
+*key*.json
