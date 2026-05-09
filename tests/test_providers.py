@@ -109,6 +109,15 @@ class TestTushareProvider:
         assert info.name == "招商银行"
         assert info.industry == "银行"
 
+    def test_import_error_graceful(self):
+        """tushare 未安装时优雅降级"""
+        with patch.dict("sys.modules", {"tushare": None}):
+            from stock_skill.providers.providers import TushareProvider
+            provider = TushareProvider()
+            assert provider._pro is None
+            result = provider.get_daily("600036.SH", "20240101", "20240105")
+            assert result.empty
+
 
 class TestEastMoneyProvider:
     """东方财富数据源测试"""
@@ -277,6 +286,7 @@ class TestDataGateway:
             "trade_date": ["20240101"], "open": [10], "high": [11],
             "low": [9], "close": [10.5], "vol": [1000000], "amount": [10500000]
         })
+        mock_tushare.return_value._pro = True
         from stock_skill.providers.providers import DataGateway
         gw = DataGateway()
         df = gw.get_kline("600036.SH", source="tushare")
@@ -320,6 +330,47 @@ class TestDataGateway:
         # longport
         quote3 = gw.get_realtime_quote("0700.HK", source="longport")
         assert quote3["price"] == 350.0
+
+    def test_tushare_not_installed_kline(self):
+        """tushare 未安装时 K线返回空 DataFrame"""
+        with patch.dict("sys.modules", {"tushare": None}):
+            from stock_skill.providers.providers import DataGateway
+            gw = DataGateway()
+            df = gw.get_kline("600036.SH", source="tushare")
+            assert df.empty
+
+    def test_tushare_not_installed_market_snapshot(self):
+        """tushare 未安装时市场快照返回空 DataFrame"""
+        with patch.dict("sys.modules", {"tushare": None}):
+            from stock_skill.providers.providers import DataGateway
+            gw = DataGateway()
+            df = gw.get_market_snapshot()
+            assert df.empty
+
+    def test_tushare_not_installed_stock_info(self):
+        """tushare 未安装时股票信息返回默认值"""
+        with patch.dict("sys.modules", {"tushare": None}):
+            from stock_skill.providers.providers import DataGateway
+            gw = DataGateway()
+            info = gw.get_stock_info("600036.SH")
+            assert info.code == "600036.SH"
+            assert info.name == "600036.SH"
+
+    def test_tushare_not_installed_dragon_tiger(self):
+        """tushare 未安装时龙虎榜返回空列表"""
+        with patch.dict("sys.modules", {"tushare": None}):
+            from stock_skill.providers.providers import DataGateway
+            gw = DataGateway()
+            result = gw.get_dragon_tiger()
+            assert result == []
+
+    def test_tushare_not_installed_trade_dates(self):
+        """tushare 未安装时交易日期返回空列表"""
+        with patch.dict("sys.modules", {"tushare": None}):
+            from stock_skill.providers.providers import DataGateway
+            gw = DataGateway()
+            result = gw.get_recent_trade_dates()
+            assert result == []
 
 
 class TestCacheIntegration:

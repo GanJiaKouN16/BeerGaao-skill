@@ -21,7 +21,7 @@ BeerGaao 可以成为你的：
 
 - 💰 **自动量化工厂**：10+ 传统策略 + ML 策略 + 集成引擎，自动生成交易信号
 - 🤖 **智能分析 Agent**：支持自然语言交互，一键完成股票技术分析
-- 📊 **多数据源网关**：整合 Tushare、东方财富、Yahoo Finance、长桥 OpenAPI
+- 📊 **多数据源网关**：整合东方财富（必装）、Tushare、Yahoo Finance、长桥 OpenAPI（选装）
 - 🔬 **因子研究平台**：因子 IC 分析、策略归因、参数自动校准
 - 📈 **回测验证系统**：三年历史数据回测，胜率 50%+，夏普比率 1.0+
 
@@ -65,7 +65,8 @@ cp config.example.env config.env
 编辑 `config.env` 文件，填入以下配置：
 
 ```bash
-# Tushare（必需）
+# Tushare（可选，历史K线数据源）
+# 安装：pip install tushare 或 pip install -e ".[tushare]"
 TUSHARE_TOKEN=your_tushare_token_here
 
 # 长桥 OpenAPI（可选，支持美股/港股）
@@ -126,7 +127,7 @@ from stock_skill.providers.providers import DataGateway
 
 gateway = DataGateway()
 
-# 使用 Tushare（默认）
+# 使用 Tushare（需安装：pip install tushare）
 df = gateway.get_kline("600036.SH", source="tushare")
 
 # 使用 Yahoo Finance（支持美股/港股）
@@ -158,7 +159,7 @@ python -m pytest tests/ -v
 
 BeerGaao 旨在构建一个 股票量化分析 Agent，能够：
 
-- 📊 **数据获取**：整合多数据源（Tushare、东方财富、Yahoo、长桥），获取实时行情、历史 K 线、资金流向
+- 📊 **数据获取**：整合多数据源（东方财富（必装）、Tushare、Yahoo、长桥（选装）），获取实时行情、历史 K 线、资金流向
 - 🔍 **技术分析**：自动计算 MA、MACD、RSI、KDJ、布林带等技术指标
 - 🤖 **策略生成**：10+ 传统策略 + ML 策略 + 集成引擎，自动生成交易信号
 - 📈 **回测验证**：三年历史数据回测，评估策略胜率、夏普比率、最大回撤

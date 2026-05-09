@@ -176,12 +176,12 @@ class TestConfigValidate:
     """配置验证测试"""
 
     def test_validate_missing_tushare(self):
-        """缺少 Tushare Token"""
+        """缺少 Tushare Token 不再报错（tushare 为可选依赖）"""
         with patch.dict(os.environ, {"TUSHARE_TOKEN": ""}):
             from stock_skill.config import reload_config
             cfg = reload_config()
             issues = cfg.validate()
-            assert any("TUSHARE_TOKEN" in i for i in issues)
+            assert len(issues) == 0
 
     def test_validate_valid_config(self):
         """有效配置"""

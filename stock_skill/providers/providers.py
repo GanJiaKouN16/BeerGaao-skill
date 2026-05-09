@@ -1,4 +1,4 @@
-"""数据提供层 - Tushare + 东方财富 + Yahoo（选装）+ 长桥（选装）+ 缓存 + 重试"""
+"""数据提供层 - Tushare（选装）+ 东方财富 + Yahoo（选装）+ 长桥（选装）+ 缓存 + 重试"""
 from __future__ import annotations
 import logging, os, time
 from typing import Any, Dict, List, Optional
@@ -45,8 +45,17 @@ class _Cache:
 _cache = _Cache()
 
 class TushareProvider:
+    """Tushare 数据源（选装）
+    
+    需要安装: pip install beergaao[tushare] 或 pip install tushare
+    """
     def __init__(self):
-        import tushare as ts
+        try:
+            import tushare as ts
+        except ImportError:
+            logger.warning("tushare 未安装，请运行: pip install beergaao[tushare]")
+            self._pro = None
+            return
         cfg = get_config()
         if cfg.tushare_token and _validate_token_format(cfg.tushare_token, "TUSHARE_TOKEN"):
             ts.set_token(cfg.tushare_token)
@@ -56,6 +65,8 @@ class TushareProvider:
 
     @_retry
     def get_daily(self, code, start, end):
+        if not self._pro:
+            return pd.DataFrame()
         k = f"daily:{code}:{start}:{end}"
         c = _cache.get(k)
         if c is not None: return c
@@ -67,6 +78,8 @@ class TushareProvider:
 
     @_retry
     def get_market_daily(self, td):
+        if not self._pro:
+            return pd.DataFrame()
         k = f"market:{td}"
         c = _cache.get(k)
         if c is not None: return c
@@ -76,6 +89,8 @@ class TushareProvider:
 
     @_retry
     def get_stock_info(self, code):
+        if not self._pro:
+            return StockInfo(code=code, name=code)
         k = f"info:{code}"
         c = _cache.get(k)
         if c is not None: return c
@@ -89,12 +104,16 @@ class TushareProvider:
 
     @_retry
     def get_trade_dates(self, end, n):
+        if not self._pro:
+            return []
         df = self._pro.trade_cal(exchange="SSE", end_date=end, is_open="1")
         if df is not None and len(df)>=n: return df.head(n)["cal_date"].tolist()
         return []
 
     @_retry
     def get_dragon_tiger(self, td):
+        if not self._pro:
+            return []
         df = self._pro.top_list(trade_date=td)
         if df is None or df.empty: return []
         return [DragonTiger(code=r.get("ts_code",""),name=r.get("name",""),close=float(r.get("close",0)),
@@ -335,18 +354,25 @@ class DataGateway:
     """数据网关 - 整合多数据源
     
     核心数据源（必装）：
-        - Tushare: 历史K线、基本面数据
         - 东方财富: 实时行情、资金流向
     
     可选数据源（选装）：
+        - Tushare: 历史K线、基本面数据（需安装 tushare）
         - Yahoo Finance: 美股/港股行情（需安装 yfinance）
         - 长桥 OpenAPI: 美股/港股行情（需安装 longport 并配置凭证）
     """
     def __init__(self): 
-        self.tushare = TushareProvider()
+        self._tushare = None
         self.eastmoney = EastMoneyProvider()
         self._yahoo = None
         self._longport = None
+    
+    @property
+    def tushare(self):
+        """延迟加载 Tushare Provider（可选依赖）"""
+        if self._tushare is None:
+            self._tushare = TushareProvider()
+        return self._tushare
     
     @property
     def yahoo(self):
@@ -362,13 +388,20 @@ class DataGateway:
             self._longport = LongportProvider()
         return self._longport
     
+    def _check_tushare(self) -> bool:
+        """检查 Tushare 是否可用"""
+        if self.tushare._pro is None:
+            logger.warning("Tushare 数据源不可用（未安装或未配置），请运行: pip install beergaao[tushare]")
+            return False
+        return True
+    
     def get_kline(self, code, days=250, source="tushare"):
         """获取K线数据，支持多数据源
         
         Args:
             code: 股票代码
             days: 获取天数
-            source: 数据源，可选 "tushare"（默认）、"yahoo"（选装，需安装 yfinance）
+            source: 数据源，可选 "tushare"（默认，需安装）、"yahoo"（选装，需安装 yfinance）
         """
         end = date.today().strftime("%Y%m%d")
         start = (date.today()-timedelta(days=days)).strftime("%Y%m%d")
@@ -387,6 +420,8 @@ class DataGateway:
                 source = "tushare"
         
         # 默认使用 tushare
+        if not self._check_tushare():
+            return pd.DataFrame()
         df = self.tushare.get_daily(code, start, end)
         if df.empty: return df
         df = df.rename(columns={"vol":"volume","trade_date":"date"})
@@ -395,10 +430,15 @@ class DataGateway:
         return df
     
     def get_market_snapshot(self, td=None):
+        if not self._check_tushare():
+            return pd.DataFrame()
         if not td: td = date.today().strftime("%Y%m%d")
         return self.tushare.get_market_daily(td)
     
-    def get_stock_info(self, code): return self.tushare.get_stock_info(code)
+    def get_stock_info(self, code):
+        if not self._check_tushare():
+            return StockInfo(code=code, name=code)
+        return self.tushare.get_stock_info(code)
     
     def get_money_flow(self, code):
         f = self.eastmoney.get_money_flow(code)
@@ -407,7 +447,10 @@ class DataGateway:
     
     def get_sector_flow(self, limit=10): return self.eastmoney.get_sector_flow(limit)
     
-    def get_dragon_tiger(self): return self.tushare.get_dragon_tiger(date.today().strftime("%Y%m%d"))
+    def get_dragon_tiger(self):
+        if not self._check_tushare():
+            return []
+        return self.tushare.get_dragon_tiger(date.today().strftime("%Y%m%d"))
     
     def get_realtime_quote(self, code, source="eastmoney"):
         """获取实时行情，支持多数据源
@@ -428,4 +471,7 @@ class DataGateway:
             return self.longport.get_realtime_quote(code)
         return self.eastmoney.get_realtime_quote(code)
     
-    def get_recent_trade_dates(self, n=5): return self.tushare.get_trade_dates(date.today().strftime("%Y%m%d"), n)
+    def get_recent_trade_dates(self, n=5):
+        if not self._check_tushare():
+            return []
+        return self.tushare.get_trade_dates(date.today().strftime("%Y%m%d"), n)

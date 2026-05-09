@@ -4,7 +4,7 @@
 
 BeerGaao 是一个 A 股量化分析 Agent 工具集，为 AI Agent 提供标准化的股票分析能力。
 
-技术栈：Python 3.10+，pandas/numpy 数据处理，requests/tushare（必装）/yfinance（选装）/longport（选装）多数据源，scikit-learn/xgboost/lightgbm 机器学习，backtrader 回测引擎，SQLite 状态持久化。
+技术栈：Python 3.10+，pandas/numpy 数据处理，requests/akshare 必装，tushare（选装）/yfinance（选装）/longport（选装）多数据源，scikit-learn/xgboost/lightgbm 机器学习，backtrader 回测引擎，SQLite 状态持久化。
 
 仓库结构：
 ```
@@ -37,9 +37,12 @@ BeerGaao/
 # 安装依赖
 pip install -e ".[ml,dev]"
 
+# 可选：安装 Tushare 数据源
+pip install -e ".[tushare]"
+
 # 配置环境变量
 cp .env.example .env
-# 编辑 .env 填入 TUSHARE_TOKEN 等
+# 编辑 .env 填入配置（TUSHARE_TOKEN 为可选，仅 Tushare 数据源需要）
 
 # 运行主程序
 python -m stock_skill                    # 完整复盘
@@ -57,7 +60,7 @@ tail -f stock_skill.log
 环境变量配置：
 - `.env` 文件位于项目根目录
 - 启动脚本通过 `python-dotenv` 自动加载
-- 关键变量：`TUSHARE_TOKEN`, `LOG_LEVEL`, `DB_PATH`
+- 关键变量：`TUSHARE_TOKEN`（可选，仅 Tushare 数据源需要）, `LOG_LEVEL`, `DB_PATH`
 
 ## 3. 后端架构
 
@@ -83,7 +86,7 @@ stock_skill/
 核心子系统：
 - **策略引擎**：10+ 传统策略 + ML 策略 + 集成引擎，支持参数自动校准
 - **因子平台**：因子 IC 分析、策略归因、因子合成
-- **数据网关**：整合 Tushare、东方财富（必装）、Yahoo Finance、长桥 OpenAPI（选装），带缓存
+- **数据网关**：整合东方财富（必装）、Tushare、Yahoo Finance、长桥 OpenAPI（选装），带缓存
 - **回测系统**：基于 Backtrader，支持三年历史数据回测
 
 ## 4. 前端架构
