@@ -1,4 +1,4 @@
-"""数据提供层 - Tushare + 东方财富 + Yahoo + 长桥 + 缓存 + 重试"""
+"""数据提供层 - Tushare + 东方财富 + Yahoo（选装）+ 长桥（选装）+ 缓存 + 重试"""
 from __future__ import annotations
 import logging, os, time
 from typing import Any, Dict, List, Optional
@@ -158,7 +158,10 @@ class EastMoneyProvider:
         _cache.set(k, sectors, 120); return sectors
 
 class YahooProvider:
-    """雅虎财经数据源 - 支持美股/港股/A股"""
+    """雅虎财经数据源（选装）- 支持美股/港股/A股
+    
+    需要安装: pip install yfinance
+    """
     def __init__(self):
         try:
             import yfinance as yf
@@ -236,7 +239,11 @@ class YahooProvider:
         return {}
 
 class LongportProvider:
-    """长桥数据源 - 支持美股/港股/A股（仅数据查询，不执行交易）"""
+    """长桥数据源（选装）- 支持美股/港股/A股（仅数据查询，不执行交易）
+    
+    需要安装: pip install longport
+    需要配置: LONGPORT_APP_KEY, LONGPORT_APP_SECRET, LONGPORT_ACCESS_TOKEN
+    """
     def __init__(self):
         cfg = get_config()
         self._config = cfg
@@ -325,6 +332,16 @@ class LongportProvider:
         return {}
 
 class DataGateway:
+    """数据网关 - 整合多数据源
+    
+    核心数据源（必装）：
+        - Tushare: 历史K线、基本面数据
+        - 东方财富: 实时行情、资金流向
+    
+    可选数据源（选装）：
+        - Yahoo Finance: 美股/港股行情（需安装 yfinance）
+        - 长桥 OpenAPI: 美股/港股行情（需安装 longport 并配置凭证）
+    """
     def __init__(self): 
         self.tushare = TushareProvider()
         self.eastmoney = EastMoneyProvider()
@@ -346,16 +363,28 @@ class DataGateway:
         return self._longport
     
     def get_kline(self, code, days=250, source="tushare"):
-        """获取K线数据，支持多数据源"""
+        """获取K线数据，支持多数据源
+        
+        Args:
+            code: 股票代码
+            days: 获取天数
+            source: 数据源，可选 "tushare"（默认）、"yahoo"（选装，需安装 yfinance）
+        """
         end = date.today().strftime("%Y%m%d")
         start = (date.today()-timedelta(days=days)).strftime("%Y%m%d")
         
         if source == "yahoo":
-            df = self.yahoo.get_daily(code, start, end)
-            if not df.empty:
-                for c in ["open","high","low","close","volume"]:
-                    if c in df.columns: df[c] = pd.to_numeric(df[c], errors="coerce")
-                return df
+            if self.yahoo._yf is None:
+                logger.warning("Yahoo 数据源不可用（yfinance 未安装），将使用 Tushare 作为备选")
+                source = "tushare"
+            else:
+                df = self.yahoo.get_daily(code, start, end)
+                if not df.empty:
+                    for c in ["open","high","low","close","volume"]:
+                        if c in df.columns: df[c] = pd.to_numeric(df[c], errors="coerce")
+                    return df
+                logger.warning(f"Yahoo 获取 {code} 数据失败，将使用 Tushare 作为备选")
+                source = "tushare"
         
         # 默认使用 tushare
         df = self.tushare.get_daily(code, start, end)
@@ -381,10 +410,21 @@ class DataGateway:
     def get_dragon_tiger(self): return self.tushare.get_dragon_tiger(date.today().strftime("%Y%m%d"))
     
     def get_realtime_quote(self, code, source="eastmoney"):
-        """获取实时行情，支持多数据源"""
+        """获取实时行情，支持多数据源
+        
+        Args:
+            code: 股票代码
+            source: 数据源，可选 "eastmoney"（默认）、"yahoo"（选装）、"longport"（选装）
+        """
         if source == "yahoo":
+            if self.yahoo._yf is None:
+                logger.warning("Yahoo 数据源不可用（yfinance 未安装），将使用东方财富作为备选")
+                return self.eastmoney.get_realtime_quote(code)
             return self.yahoo.get_realtime_quote(code)
         elif source == "longport":
+            if not self.longport._initialized:
+                logger.warning("长桥数据源不可用（凭证未配置或 longport 未安装），将使用东方财富作为备选")
+                return self.eastmoney.get_realtime_quote(code)
             return self.longport.get_realtime_quote(code)
         return self.eastmoney.get_realtime_quote(code)
     

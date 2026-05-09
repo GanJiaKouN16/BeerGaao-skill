@@ -4,7 +4,7 @@
 
 BeerGaao 是一个 A 股量化分析 Agent 工具集，为 AI Agent 提供标准化的股票分析能力。
 
-技术栈：Python 3.10+，pandas/numpy 数据处理，requests/tushare/yfinance/longport 多数据源，scikit-learn/xgboost/lightgbm 机器学习，backtrader 回测引擎，SQLite 状态持久化。
+技术栈：Python 3.10+，pandas/numpy 数据处理，requests/tushare（必装）/yfinance（选装）/longport（选装）多数据源，scikit-learn/xgboost/lightgbm 机器学习，backtrader 回测引擎，SQLite 状态持久化。
 
 仓库结构：
 ```
@@ -72,7 +72,7 @@ stock_skill/
 │   ├── base.py            # 因子基类 + @register_factor 注册
 │   └── *.py               # 具体因子实现
 ├── backtest/engine.py     # 回测引擎（三年历史数据回测）
-├── providers/providers.py # 多数据源网关（tushare/东财/yfinance/长桥）
+├── providers/providers.py # 多数据源网关（tushare/东财 必装，yfinance/长桥 选装）
 ├── config.py              # 配置管理
 ├── state.py               # SQLite 持久化（信号历史、持仓）
 ├── risk.py                # 风控计算（止损、仓位）
@@ -83,7 +83,7 @@ stock_skill/
 核心子系统：
 - **策略引擎**：10+ 传统策略 + ML 策略 + 集成引擎，支持参数自动校准
 - **因子平台**：因子 IC 分析、策略归因、因子合成
-- **数据网关**：整合 Tushare、东方财富、Yahoo Finance、长桥 OpenAPI，带缓存
+- **数据网关**：整合 Tushare、东方财富（必装）、Yahoo Finance、长桥 OpenAPI（选装），带缓存
 - **回测系统**：基于 Backtrader，支持三年历史数据回测
 
 ## 4. 前端架构
