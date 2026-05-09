@@ -208,7 +208,7 @@ class TestConfigValidate:
         with patch.dict(os.environ, env):
             from stock_skill.config import reload_config
             cfg = reload_config()
-            issues = cfg.validate()
+            issues = cfg.validate_longport()
             assert any("LONGPORT" in i for i in issues)
 
 

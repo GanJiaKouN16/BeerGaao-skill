@@ -58,9 +58,15 @@ class Config:
     index_codes: List[str] = field(default_factory=lambda: ["000001.SH","399001.SZ","399006.SZ"])
 
     def validate(self) -> List[str]:
+        """验证必需配置（仅 TUSHARE_TOKEN）"""
         issues = []
         if not self.tushare_token or self.tushare_token == "your_tushare_token_here":
             issues.append("TUSHARE_TOKEN 未配置")
+        return issues
+
+    def validate_longport(self) -> List[str]:
+        """验证长桥配置（可选，用于港股/美股）"""
+        issues = []
         if not self.longport_app_key or self.longport_app_key == "your_longport_app_key_here":
             issues.append("LONGPORT_APP_KEY 未配置")
         if not self.longport_app_secret or self.longport_app_secret == "your_longport_app_secret_here":

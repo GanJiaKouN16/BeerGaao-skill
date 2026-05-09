@@ -328,8 +328,22 @@ class DataGateway:
     def __init__(self): 
         self.tushare = TushareProvider()
         self.eastmoney = EastMoneyProvider()
-        self.yahoo = YahooProvider()
-        self.longport = LongportProvider()
+        self._yahoo = None
+        self._longport = None
+    
+    @property
+    def yahoo(self):
+        """延迟加载 Yahoo Provider（可选依赖）"""
+        if self._yahoo is None:
+            self._yahoo = YahooProvider()
+        return self._yahoo
+    
+    @property
+    def longport(self):
+        """延迟加载 Longport Provider（可选依赖）"""
+        if self._longport is None:
+            self._longport = LongportProvider()
+        return self._longport
     
     def get_kline(self, code, days=250, source="tushare"):
         """获取K线数据，支持多数据源"""
