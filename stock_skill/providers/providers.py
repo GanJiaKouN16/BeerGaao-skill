@@ -470,7 +470,8 @@ class DataGateway:
                 return self.eastmoney.get_realtime_quote(code)
             return self.yahoo.get_realtime_quote(code)
         elif source == "longport":
-            if not self.longport._initialized:
+            self.longport._init_context()
+            if not self.longport._quote_ctx:
                 logger.warning("长桥数据源不可用（凭证未配置或 longport 未安装），将使用东方财富作为备选")
                 return self.eastmoney.get_realtime_quote(code)
             return self.longport.get_realtime_quote(code)
