@@ -36,11 +36,13 @@ class _Cache:
     def __init__(self, ttl=300): self._s={}; self._ttl=ttl
     def get(self, k):
         if k in self._s:
-            v,t = self._s[k]
-            if time.time()-t < self._ttl: return v
+            v, t, entry_ttl = self._s[k]
+            if time.time() - t < entry_ttl: return v
             del self._s[k]
         return None
-    def set(self, k, v, ttl=None): self._s[k] = (v, time.time())
+    def set(self, k, v, ttl=None):
+        effective_ttl = ttl if ttl is not None else self._ttl
+        self._s[k] = (v, time.time(), effective_ttl)
 
 _cache = _Cache()
 
@@ -122,11 +124,19 @@ class TushareProvider:
 
 class EastMoneyProvider:
     HEADERS = {"User-Agent":"Mozilla/5.0","Referer":"https://quote.eastmoney.com/"}
-    _UT = os.getenv("EASTMONEY_UT", "fa5fd1943c7b386f172d6893dbbd1131")
-    def __init__(self): self._t = get_config().http_timeout
+    def __init__(self):
+        self._t = get_config().http_timeout
+    @property
+    def _UT(self):
+        return os.getenv("EASTMONEY_UT", "fa5fd1943c7b386f172d6893dbbd1131")
     @staticmethod
     def _secid(code):
-        c = code.split(".")[0]; return f"1.{c}" if code.endswith(".SH") else f"0.{c}"
+        c = code.split(".")[0]
+        if code.endswith(".SH"):
+            return f"1.{c}"
+        elif code.endswith(".HK"):
+            return f"116.{c}"
+        return f"0.{c}"
 
     @_retry
     def get_realtime_quote(self, code):
@@ -193,10 +203,6 @@ class YahooProvider:
         """转换股票代码为雅虎格式"""
         if code.endswith(".SH"):
             return code.replace(".SH", ".SS")
-        elif code.endswith(".SZ"):
-            return code.replace(".SZ", ".SZ")
-        elif code.endswith(".HK"):
-            return code.replace(".HK", ".HK")
         return code
 
     @_retry
@@ -301,12 +307,6 @@ class LongportProvider:
 
     def _convert_code(self, code: str) -> str:
         """转换股票代码为长桥格式"""
-        if code.endswith(".SH"):
-            return code.replace(".SH", ".SH")
-        elif code.endswith(".SZ"):
-            return code.replace(".SZ", ".SZ")
-        elif code.endswith(".HK"):
-            return code.replace(".HK", ".HK")
         return code
 
     @_retry

@@ -1,11 +1,11 @@
-﻿"""P1: 配置管理测试 - 环境变量加载、默认值、验�?""
+﻿"""P1: 配置管理测试 - 环境变量加载、默认值、验证"""
 import pytest
 import os
 from unittest.mock import patch
 
 
 class TestConfigDefaults:
-    """配置默认值测�?""
+    """配置默认值测试"""
 
     def test_default_tushare_token(self):
         """默认 Tushare Token"""
@@ -22,28 +22,28 @@ class TestConfigDefaults:
             assert cfg.max_single_position == 0.30
 
     def test_default_max_total_position(self):
-        """默认总仓位上�?""
+        """默认总仓位上限"""
         with patch.dict(os.environ, {}, clear=True):
             from stock_skill.config import reload_config
             cfg = reload_config()
             assert cfg.max_total_position == 0.80
 
     def test_default_min_market_score(self):
-        """默认最低市场评�?""
+        """默认最低市场评分"""
         with patch.dict(os.environ, {}, clear=True):
             from stock_skill.config import reload_config
             cfg = reload_config()
             assert cfg.min_market_score == 4.0
 
     def test_default_stop_loss_rate(self):
-        """默认止损�?""
+        """默认止损率"""
         with patch.dict(os.environ, {}, clear=True):
             from stock_skill.config import reload_config
             cfg = reload_config()
             assert cfg.stop_loss_rate == -0.04
 
     def test_default_target_rate(self):
-        """默认止盈�?""
+        """默认止盈率"""
         with patch.dict(os.environ, {}, clear=True):
             from stock_skill.config import reload_config
             cfg = reload_config()
@@ -82,21 +82,21 @@ class TestConfigFromEnv:
     """环境变量加载测试"""
 
     def test_tushare_token_from_env(self):
-        """从环境变量加�?Tushare Token"""
+        """从环境变量加载 Tushare Token"""
         with patch.dict(os.environ, {"TUSHARE_TOKEN": "test_token_123"}):
             from stock_skill.config import reload_config
             cfg = reload_config()
             assert cfg.tushare_token == "test_token_123"
 
     def test_max_single_position_from_env(self):
-        """从环境变量加载单只仓位上�?""
+        """从环境变量加载单只仓位上限"""
         with patch.dict(os.environ, {"MAX_SINGLE_POSITION": "0.25"}):
             from stock_skill.config import reload_config
             cfg = reload_config()
             assert cfg.max_single_position == 0.25
 
     def test_max_total_position_from_env(self):
-        """从环境变量加载总仓位上�?""
+        """从环境变量加载总仓位上限"""
         with patch.dict(os.environ, {"MAX_TOTAL_POSITION": "0.70"}):
             from stock_skill.config import reload_config
             cfg = reload_config()
@@ -124,21 +124,21 @@ class TestConfigFromEnv:
             assert cfg.stop_loss_rate == -0.05
 
     def test_hold_days_from_env(self):
-        """从环境变量加载持仓天�?""
+        """从环境变量加载持仓天数"""
         with patch.dict(os.environ, {"HOLD_DAYS": "10"}):
             from stock_skill.config import reload_config
             cfg = reload_config()
             assert cfg.hold_days == 10
 
     def test_invalid_env_int(self):
-        """无效整数环境变量 -> 使用默认�?""
+        """无效整数环境变量 -> 使用默认值"""
         with patch.dict(os.environ, {"HOLD_DAYS": "invalid"}):
             from stock_skill.config import reload_config
             cfg = reload_config()
             assert cfg.hold_days == 5  # _env_int fallback 到字段默认值 5
 
     def test_invalid_env_float(self):
-        """无效浮点数环境变�?-> 使用默认�?""
+        """无效浮点数环境变量 -> 使用默认值"""
         with patch.dict(os.environ, {"MAX_SINGLE_POSITION": "invalid"}):
             from stock_skill.config import reload_config
             cfg = reload_config()
@@ -149,7 +149,7 @@ class TestConfigLongport:
     """长桥配置测试"""
 
     def test_longport_config_from_env(self):
-        """从环境变量加载长桥配�?""
+        """从环境变量加载长桥配置"""
         env = {
             "LONGPORT_APP_KEY": "test_key",
             "LONGPORT_APP_SECRET": "test_secret",
@@ -163,7 +163,7 @@ class TestConfigLongport:
             assert cfg.longport_access_token == "test_token"
 
     def test_longport_config_default(self):
-        """长桥配置默认�?""
+        """长桥配置默认值"""
         with patch.dict(os.environ, {}, clear=True):
             from stock_skill.config import reload_config
             cfg = reload_config()
@@ -223,7 +223,7 @@ class TestConfigSingleton:
         assert cfg1 is cfg2
 
     def test_reload_config(self):
-        """reload_config 创建新实�?""
+        """reload_config 创建新实例"""
         from stock_skill.config import get_config, reload_config
         cfg1 = get_config()
         cfg2 = reload_config()

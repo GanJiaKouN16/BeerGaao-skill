@@ -3,7 +3,7 @@ import pytest
 import time
 import pandas as pd
 import numpy as np
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import patch, MagicMock
 from datetime import date, timedelta
 
 
@@ -230,15 +230,16 @@ class TestYahooProvider:
             result = provider.get_daily("AAPL", "20240101", "20240105")
             assert result.empty
 
-    @patch("stock_skill.providers.providers.YahooProvider._yf", new_callable=PropertyMock)
-    def test_empty_ticker_result(self, mock_yf):
+    @patch("stock_skill.providers.providers.yfinance", new_callable=MagicMock)
+    def test_empty_ticker_result(self, mock_yf_module):
         """Ticker 返回空数据"""
         mock_ticker = MagicMock()
         mock_ticker.history.return_value = pd.DataFrame()
-        mock_yf.return_value.Ticker.return_value = mock_ticker
+        mock_yf_module.Ticker.return_value = mock_ticker
 
         from stock_skill.providers.providers import YahooProvider
         provider = YahooProvider()
+        provider._yf = mock_yf_module
         result = provider.get_daily("AAPL", "20240101", "20240105")
         assert result.empty
 
