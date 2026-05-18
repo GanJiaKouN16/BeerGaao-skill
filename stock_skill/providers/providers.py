@@ -36,7 +36,12 @@ class _Cache:
     def __init__(self, ttl=300): self._s={}; self._ttl=ttl
     def get(self, k):
         if k in self._s:
-            v, t, entry_ttl = self._s[k]
+            entry = self._s[k]
+            if len(entry) == 2:
+                v, t = entry
+                entry_ttl = self._ttl
+            else:
+                v, t, entry_ttl = entry
             if time.time() - t < entry_ttl: return v
             del self._s[k]
         return None
@@ -135,7 +140,7 @@ class EastMoneyProvider:
         if code.endswith(".SH"):
             return f"1.{c}"
         elif code.endswith(".HK"):
-            return f"116.{c}"
+            return f"116.{c.zfill(5)}"
         return f"0.{c}"
 
     @_retry
@@ -306,7 +311,7 @@ class LongportProvider:
             logger.warning(f"长桥初始化失败: {e}")
 
     def _convert_code(self, code: str) -> str:
-        """转换股票代码为长桥格式"""
+        """长桥直接使用 .SH/.SZ/.HK 格式，无需转换"""
         return code
 
     @_retry
